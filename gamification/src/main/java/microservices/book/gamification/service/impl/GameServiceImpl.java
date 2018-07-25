@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import microservices.book.gamification.client.IMultiplicationResultAttemptClient;
@@ -13,6 +15,7 @@ import microservices.book.gamification.domain.Badge;
 import microservices.book.gamification.domain.BadgeCard;
 import microservices.book.gamification.domain.GameStats;
 import microservices.book.gamification.domain.ScoreCard;
+import microservices.book.gamification.event.EventHandler;
 import microservices.book.gamification.repository.BadgeCardRepository;
 import microservices.book.gamification.repository.ScoreCardRepository;
 import microservices.book.gamification.service.IGameService;
@@ -20,6 +23,7 @@ import microservices.book.gamification.service.IGameService;
 @Service
 public class GameServiceImpl implements IGameService {
 
+	private final Logger logger = LoggerFactory.getLogger(GameServiceImpl.class);
 	public static final int LUCKY_NUMBER = 42;
 
 	private ScoreCardRepository scoreCardRepository;
@@ -39,6 +43,8 @@ public class GameServiceImpl implements IGameService {
 		if (correct) {
 			ScoreCard scoreCard = new ScoreCard(userId, attemptId);
 			scoreCardRepository.save(scoreCard);
+			logger.info("User with id " + userId + " scored " + scoreCard.getScore() + " points for attempt id "
+					+ attemptId);
 			List<BadgeCard> badgeCards = processForBadges(userId, attemptId);
 			return new GameStats(userId, scoreCard.getScore(),
 					badgeCards.stream().map(BadgeCard::getBadge).collect(Collectors.toList()));
@@ -51,10 +57,15 @@ public class GameServiceImpl implements IGameService {
 	 * badges in case their conditions are met.
 	 */
 	private List<BadgeCard> processForBadges(final Long userId, final Long attemptId) {
+
 		List<BadgeCard> badgeCards = new ArrayList<>();
+
 		int totalScore = scoreCardRepository.getTotalScoreForUser(userId);
+		logger.info("New score for user " + userId + " is " + totalScore);
+
 		List<ScoreCard> scoreCardList = scoreCardRepository.findByUserIdOrderByScoreTimestampDesc(userId);
 		List<BadgeCard> badgeCardList = badgeCardRepository.findByUserIdOrderByBadgeTimestampDesc(userId);
+
 		// Badges depending on score
 		checkAndGiveBadgeBasedOnScore(badgeCardList, Badge.BRONZE_MULTIPLICATOR, totalScore, 100, userId)
 				.ifPresent(badgeCards::add);
@@ -62,11 +73,13 @@ public class GameServiceImpl implements IGameService {
 				.ifPresent(badgeCards::add);
 		checkAndGiveBadgeBasedOnScore(badgeCardList, Badge.GOLD_MULTIPLICATOR, totalScore, 999, userId)
 				.ifPresent(badgeCards::add);
+
 		// First won badge
 		if (scoreCardList.size() == 1 && !containsBadge(badgeCardList, Badge.FIRST_WON)) {
 			BadgeCard firstWonBadge = giveBadgeToUser(Badge.FIRST_WON, userId);
 			badgeCards.add(firstWonBadge);
 		}
+
 		// Lucky number badge
 		MultiplicationResultAttempt attempt = attemptClient.retrieveMultiplicationResultAttemptbyId(attemptId);
 		if (!containsBadge(badgeCardList, Badge.LUCKY_NUMBER) && (LUCKY_NUMBER == attempt.getMultiplicationFactorA()
@@ -74,6 +87,7 @@ public class GameServiceImpl implements IGameService {
 			BadgeCard luckyNumberBadge = giveBadgeToUser(Badge.LUCKY_NUMBER, userId);
 			badgeCards.add(luckyNumberBadge);
 		}
+
 		return badgeCards;
 	}
 
@@ -111,6 +125,7 @@ public class GameServiceImpl implements IGameService {
 	private BadgeCard giveBadgeToUser(final Badge badge, final Long userId) {
 		BadgeCard badgeCard = new BadgeCard(userId, badge);
 		badgeCardRepository.save(badgeCard);
+		logger.info("User with id {} won a new badge: " + userId, badge);
 		return badgeCard;
 	}
 

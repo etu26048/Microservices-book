@@ -1,5 +1,7 @@
 package microservices.book.gamification.event;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,7 @@ import microservices.book.gamification.service.IGameService;
 public class EventHandler {
 
 	private IGameService gameService;
+	private final Logger logger = LoggerFactory.getLogger(EventHandler.class);
 
 	@Autowired
 	public EventHandler(IGameService gameService) {
@@ -19,11 +22,14 @@ public class EventHandler {
 
 	@RabbitListener(queues = "${multiplication.queue}")
 	public void handleMultiplicationSolved(final MultiplicationSolvedEvent event) {
+
+		logger.info("Multiplication Solved Event received: " + event.getMultiplicationResultAttemptId());
 		try {
 			gameService.newAttemptForUser(event.getUserId(), event.getMultiplicationResultAttemptId(),
 					event.isCorrect());
 		} catch (final Exception e) {
 
+			logger.info("Multiplication Solved Event received: " + event.getMultiplicationResultAttemptId());
 			// Avoids the event to re-queued and reprocessed
 			throw new AmqpRejectAndDontRequeueException(e);
 		}
