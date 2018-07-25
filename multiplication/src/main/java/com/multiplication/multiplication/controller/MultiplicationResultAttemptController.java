@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.multiplication.multiplication.domain.Multiplication;
 import com.multiplication.multiplication.domain.MultiplicationResultAttempt;
-import com.multiplication.multiplication.domain.User;
 import com.multiplication.multiplication.service.MultiplicationService;
 
 /**
@@ -47,8 +45,8 @@ public final class MultiplicationResultAttemptController {
 		return ResponseEntity.ok(multiplicationService.getStatsForUser(alias));
 	}
 
-	@GetMapping("/{resultId)")
-	public MultiplicationResultAttempt getResultById(@PathVariable("resultId") Long id) {
-			return multiplicationService.getResultById(id);
+	@GetMapping("/{resultsId}")
+	public ResponseEntity<MultiplicationResultAttempt> getResultById(@PathVariable("resultsId") Long id) {
+			return ResponseEntity.ok(multiplicationService.getResultById(id));
 	}
 }

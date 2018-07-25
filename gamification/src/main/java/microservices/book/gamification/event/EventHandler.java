@@ -28,7 +28,7 @@ public class EventHandler {
 			gameService.newAttemptForUser(event.getUserId(), event.getMultiplicationResultAttemptId(),
 					event.isCorrect());
 		} catch (final Exception e) {
-
+			
 			logger.info("Multiplication Solved Event received: " + event.getMultiplicationResultAttemptId());
 			// Avoids the event to re-queued and reprocessed
 			throw new AmqpRejectAndDontRequeueException(e);
