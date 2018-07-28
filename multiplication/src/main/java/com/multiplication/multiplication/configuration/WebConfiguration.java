@@ -7,6 +7,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebMvc
+/**
+ * it's enabled SpringMVC configuration then, when we would reach
+ * localhost:8080/index.html, the dispatcher servlet will look for a
+ * requestmapping associated to this value. Therefore, no page will actually be
+ * rendered and this error appear : 
+ * No mapping found for HTTP request with URI [/index.html] in DispatcherServlet with name 'dispatcherServlet'
+ */
 public class WebConfiguration implements WebMvcConfigurer {
 
 	/**
